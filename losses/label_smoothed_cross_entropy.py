@@ -48,7 +48,32 @@ def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=None, reduce=T
     ################################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    if target.dim() == lprobs.dim() - 1:
+        target = target.unsqueeze(-1)
+
+    if ignore_index is not None:
+        ignore_mask = target.eq(ignore_index)
+        gather_target = target.masked_fill(ignore_mask, 0)
+    else:
+        ignore_mask = None
+        gather_target = target
+
+    nll_loss = -lprobs.gather(dim=-1, index=gather_target)
+    smooth_loss = -lprobs.sum(dim=-1, keepdim=True)
+
+    if ignore_mask is not None:
+        nll_loss = nll_loss.masked_fill(ignore_mask, 0.0)
+        smooth_loss = smooth_loss.masked_fill(ignore_mask, 0.0)
+
+    nll_loss = nll_loss.squeeze(-1)
+    smooth_loss = smooth_loss.squeeze(-1)
+
+    if reduce:
+        nll_loss = nll_loss.sum()
+        smooth_loss = smooth_loss.sum()
+
+    eps_i = epsilon / lprobs.size(-1)
+    loss = (1.0 - epsilon) * nll_loss + eps_i * smooth_loss
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ################################################################################

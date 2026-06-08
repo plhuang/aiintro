@@ -206,7 +206,17 @@ class AudioVideoDataset(FairseqDataset):
         ################################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        s, e = self.label_offsets_list[index]
+        with open(self.label_path, "rb") as f:
+            f.seek(s)
+            label = f.read(e - s).decode("utf-8").rstrip()
+
+        label = self.bpe_tokenizer.encode(label)
+        label = self.dictionary.encode_line(
+            label,
+            add_if_not_exist=False,
+            append_eos=True,
+        ).long()
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ################################################################################
@@ -247,7 +257,22 @@ class AudioVideoDataset(FairseqDataset):
         ################################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        cap = cv2.VideoCapture(video_name)
+        frames = []
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frames.append(frame)
+        cap.release()
+
+        if len(frames) == 0:
+            raise ValueError(f"Unable to load video from {video_name}")
+
+        feats = np.stack(frames, axis=0)
+        feats = self.transform(feats)
+        feats = np.expand_dims(feats, axis=-1)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ################################################################################

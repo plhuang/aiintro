@@ -47,7 +47,13 @@ class BasicBlock(nn.Module):
         ################################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        self.conv1 = conv3x3(inplanes, planes, stride)
+        self.bn1 = nn.BatchNorm2d(planes)
+        self.relu1 = nn.PReLU(num_parameters=planes)
+        self.conv2 = conv3x3(planes, planes, 1)
+        self.bn2 = nn.BatchNorm2d(planes)
+        self.relu2 = nn.PReLU(num_parameters=planes)
+        self.downsample = downsample
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ################################################################################
@@ -62,7 +68,20 @@ class BasicBlock(nn.Module):
         ################################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        residual = x
+
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu1(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+
+        if self.downsample is not None:
+            residual = self.downsample(x)
+
+        out = out + residual
+        out = self.relu2(out)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ################################################################################
@@ -111,7 +130,16 @@ class ResNet(nn.Module):
         ################################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        downsample = None
+        outplanes = planes * block.expansion
+        if stride != 1 or self.inplanes != outplanes:
+            downsample = self.downsample_block(self.inplanes, outplanes, stride)
+
+        layers.append(block(self.inplanes, planes, stride=stride, downsample=downsample))
+        self.inplanes = outplanes
+
+        for _ in range(1, blocks):
+            layers.append(block(self.inplanes, planes))
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ################################################################################
